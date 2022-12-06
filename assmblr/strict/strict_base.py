@@ -57,6 +57,8 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
     def __or__(self, other):
         if isinstance(other, str):
             return self.message(other)
+        elif isinstance(other, StrictPredicate):
+            return self.bind(other)
         return self.bind(other)
 
     def __ror__(self, other):
@@ -64,24 +66,27 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
 
 
 class StrictPredicate(metaclass = _StrictlyMeta):
-    def __init__(self, *predicates):
-        self.predicates = predicates
+    def __init__(self, func):
+        self.func = func
 
     def __call__(self, value):
-        for predicate in self.predicates:
-            if not predicate(value):
-                return False
-        return True
+        return self.func(value)
 
-    def __bind__(self, *funcs):
-        self.predicates += funcs
-        return self
-
-    def __or__(self, other):
-        return self.__bind__(other)
-
-    def __ror__(self, other):
-        return self.__bind__(other)
+    def __and__(self, other):
+        if callable(other):
+            return StrictPredicate(lambda x: self(x) and other(x))
+        raise TypeError(f"Cannot combine {self} with {other}")
 
 
+if __name__ == "__main__":
+    email_predicate = StrictPredicate | (lambda x: isinstance(x, str) and len(x) > 0 and "@" in x)
 
+
+    class Customer:
+        email = StrictlyDescriptor | email_predicate | "Must be a valid email address"
+
+        def __init__(self, email):
+            self.email = email
+
+        def __repr__(self):
+            return f"Customer({self.email!r})"
