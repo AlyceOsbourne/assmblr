@@ -1,1 +1,1 @@
-import enforced_annotations
+from strict import *
