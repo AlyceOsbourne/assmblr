@@ -25,8 +25,8 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
 
     def __set__(self, instance, value):
         if not self.map(value):
-            raise ValueError(self.msg)
-        instance.__dict__[self.__name__] = value
+            msg = f"attempted to set {self.__name__!r} to {value!r} but {self.msg}"
+            raise ValueError(msg)
 
     def bind(self, *funcs):
         self.predicates += funcs
@@ -54,6 +54,9 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
         self.msg = msg
         return self
 
+    def __call__(self, *args):
+        self.bind(*args)
+
     def __or__(self, other):
         if isinstance(other, str):
             return self.message(other)
@@ -72,21 +75,10 @@ class StrictPredicate(metaclass = _StrictlyMeta):
     def __call__(self, value):
         return self.func(value)
 
-    def __and__(self, other):
+    def __or__(self, other):
         if callable(other):
             return StrictPredicate(lambda x: self(x) and other(x))
         raise TypeError(f"Cannot combine {self} with {other}")
 
 
-if __name__ == "__main__":
-    email_predicate = StrictPredicate | (lambda x: isinstance(x, str) and len(x) > 0 and "@" in x)
-
-
-    class Customer:
-        email = StrictlyDescriptor | email_predicate | "Must be a valid email address"
-
-        def __init__(self, email):
-            self.email = email
-
-        def __repr__(self):
-            return f"Customer({self.email!r})"
+__all__ = ["StrictlyDescriptor", "StrictPredicate"]
