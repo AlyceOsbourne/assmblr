@@ -56,6 +56,7 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
 
     def __call__(self, *args):
         self.bind(*args)
+        return self
 
     def __or__(self, other):
         if isinstance(other, str):

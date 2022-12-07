@@ -1,3 +1,5 @@
 /assmblr/.hypothesis/
 /poetry.lock
 /pyproject.toml
+/.idea
+/dist
