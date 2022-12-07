@@ -10,22 +10,23 @@ if __name__ == "__main__":
     is_str_non_empty = is_str_predicate | is_non_empty
 
     is_age_adult = (
-        StrictPredicate | (lambda x: isinstance(x, int)) | (lambda x: x >= 18)
+            StrictPredicate | (lambda x: isinstance(x, int)) | (lambda x: x >= 18)
     )
     is_name = is_str_non_empty | re.compile(r"^[a-zA-Z ]+$").match
     is_email = (
-        is_str_non_empty
-        | re.compile(r"^([a-zA-Z0-9_\-.]+)@([a-zA-Z0-9_\-.]+)\.([a-zA-Z]{2,5})$").match
+            is_str_non_empty
+            | re.compile(r"^([a-zA-Z0-9_\-.]+)@([a-zA-Z0-9_\-.]+)\.([a-zA-Z]{2,5})$").match
     )
     is_phone = is_str_non_empty | re.compile(r"^\\+(?:[0-9] ?){6,14}[0-9]$").match
 
     is_card_number = is_str_non_empty | re.compile(r"^[0-9]{16}$").match
     is_card_cvv = is_str_non_empty | re.compile(r"^[0-9]{3}$").match
     is_card_expiry = (
-        is_str_non_empty
-        | re.compile(r"^[0-9]{2}/[0-9]{2}$").match
-        | (lambda x: datetime.datetime.strptime(x, "%m/%y") > datetime.datetime.now())
+            is_str_non_empty
+            | re.compile(r"^[0-9]{2}/[0-9]{2}$").match
+            | (lambda x: datetime.datetime.strptime(x, "%m/%y") > datetime.datetime.now())
     )
+
 
     # using dataclasses cause quick and easy to instantiate, but this works for standard classes too, you just have
     # to assign values in the init like normal (don't assign a Descriptor object in init, do that on the class level)
@@ -36,37 +37,37 @@ if __name__ == "__main__":
         cvv = StrictlyDescriptor | is_card_cvv | "Card CVV is invalid"
         expiry = StrictlyDescriptor | is_card_expiry | "Card expiry is invalid"
 
+
     @dataclass
     class CustomerInfo:
         forename: str = StrictlyDescriptor | is_name | "Must be a non-empty string"
         surname: str = StrictlyDescriptor | is_name | "Must be a non-empty string"
         age: int = (
-            StrictlyDescriptor
-            | is_age_adult
-            | "Must be an integer greater than or equal to 18"
+                StrictlyDescriptor
+                | is_age_adult
+                | "Must be an integer greater than or equal to 18"
         )
+
 
     @dataclass
     class ContactDetails:
-        email = StrictlyDescriptor | is_email | "Email is invalid"
-        phone = StrictlyDescriptor | is_phone | "Phone is invalid"
+        email: str = StrictlyDescriptor | is_email | "Email is invalid"
+        phone: str = StrictlyDescriptor | is_phone | "Phone is invalid"
+
 
     @dataclass
     class Customer:
-        customer_info = (
-            StrictlyDescriptor
-            | (lambda x: isinstance(x, CustomerInfo))
-            | "Must be a CustomerInfo object"
+        customer_info: CustomerInfo = (
+                StrictlyDescriptor(lambda x: isinstance(x, CustomerInfo))
+                | "Must be a CustomerInfo object"
         )
 
         contact_details: ContactDetails = (
-            StrictlyDescriptor
-            | (lambda x: isinstance(x, ContactDetails))
-            | "Must be a ContactDetails object"
+                StrictlyDescriptor(lambda x: isinstance(x, ContactDetails))
+                | "Must be a ContactDetails object"
         )
 
         card: Card = (
-            StrictlyDescriptor
-            | (lambda x: isinstance(x, Card))
-            | "Must be a Card object"
+                StrictlyDescriptor(lambda x: isinstance(x, Card))
+                | "Must be a Card object"
         )
