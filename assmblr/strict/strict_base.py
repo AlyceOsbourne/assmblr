@@ -1,15 +1,4 @@
 from collections import OrderedDict
-import timeit
-
-
-def time_func(func):
-    def wrapper(*args, **kwargs):
-        start = timeit.default_timer()
-        result = func(*args, **kwargs)
-        end = timeit.default_timer()
-        print("Time taken: {} ms".format((end - start) * 1000))
-        return result
-    return wrapper
 
 
 class _StrictlyMeta(type):
@@ -21,6 +10,7 @@ class _StrictlyMeta(type):
 
 
 class StrictlyDescriptor(metaclass = _StrictlyMeta):
+    __slots__ = ("predicates", "msg", '__name__')
     predicate_cache = OrderedDict()
 
     def __init__(
@@ -34,11 +24,11 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
     def __set_name__(self, owner, name):
         self.__name__ = name
 
-    @time_func
     def __set__(self, instance, value):
         if not self.map(value):
             msg = f"attempted to set {self.__name__!r} to {value!r} but {self.msg}"
             raise ValueError(msg)
+        instance.__dict__[self.__name__] = value
 
     def bind(self, *funcs):
         self.predicates += funcs
@@ -59,16 +49,12 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
                 result = False
                 break
         try:
-            return self.predicate_cache.setdefault(key, result)  # NOQA
+            return  self.predicate_cache.setdefault(key, result)  # NOQA
         except NameError:
             return result
 
     def message(self, msg):
         self.msg = msg
-        return self
-
-    def __call__(self, *args):
-        self.bind(*args)
         return self
 
     def __or__(self, other):
@@ -81,6 +67,8 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
 
 
 class StrictPredicate(metaclass = _StrictlyMeta):
+    __slots__ = ("func",)
+
     def __init__(self, func):
         self.func = func
 
