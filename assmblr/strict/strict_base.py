@@ -1,17 +1,9 @@
-from collections import OrderedDict
+from meta import _DescriptorPipelineMeta
 
 
-class _StrictlyMeta(type):
-    def __or__(cls, other):
-        return cls(other)
-
-    def __ror__(cls, other):
-        return cls(other)
-
-
-class Strictly(metaclass = _StrictlyMeta):
+class Strictly(metaclass = _DescriptorPipelineMeta):
     __slots__ = ("predicates", "msg", '__name__')
-    predicate_cache = OrderedDict()
+    predicate_cache = {}
 
     def __init__(
             self,
@@ -25,7 +17,8 @@ class Strictly(metaclass = _StrictlyMeta):
         self.__name__ = name
 
     def __set__(self, instance, value):
-        if not self.map(value):
+        is_match = self.map(value)
+        if not is_match:
             msg = f"attempted to set {self.__name__!r} to {value!r} but {self.msg}"
             raise ValueError(msg)
         instance.__dict__[self.__name__] = value
@@ -35,7 +28,10 @@ class Strictly(metaclass = _StrictlyMeta):
         return self
 
     def map(self, value):
-        key = id(value)
+        try:
+            key = hash(value)
+        except TypeError:
+            key = id(value)
 
         if key in self.predicate_cache:
             return self.predicate_cache.setdefault(key, self.predicate_cache.pop(key))
@@ -60,19 +56,26 @@ class Strictly(metaclass = _StrictlyMeta):
         return self.__or__(other)
 
 
-class StrictPredicate(metaclass = _StrictlyMeta):
+class StrictPredicate(metaclass = _DescriptorPipelineMeta):
     __slots__ = ("func",)
 
     def __init__(self, func):
         self.func = func
 
     def __call__(self, value):
-        return self.func(value)
+        func = self.func
+        return func(value)
 
     def __or__(self, other):
-        if callable(other):
-            return StrictPredicate(lambda x: self(x) and other(x))
+        is_callable = callable(other)
+        if is_callable:
+            return StrictPredicate(self.combine(self.func, other))
         raise TypeError(f"Cannot combine {self} with {other}")
 
+    @staticmethod
+    def combine(func1, func2):
+        def combined(x):
+            return func1(x) and func2(x)
+        return combined
 
 __all__ = ["Strictly", "StrictPredicate"]
