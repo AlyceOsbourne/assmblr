@@ -9,7 +9,7 @@ class _StrictlyMeta(type):
         return cls(other)
 
 
-class StrictlyDescriptor(metaclass = _StrictlyMeta):
+class Strictly(metaclass = _StrictlyMeta):
     __slots__ = ("predicates", "msg", '__name__')
     predicate_cache = OrderedDict()
 
@@ -35,23 +35,17 @@ class StrictlyDescriptor(metaclass = _StrictlyMeta):
         return self
 
     def map(self, value):
-        try:
-            key = hash(value)
-        except TypeError:
-            """If the value is unhashable, we can't cache it"""
-        else:
-            if key in self.predicate_cache:
-                self.predicate_cache.move_to_end(key)
-                return self.predicate_cache[key]
-        result = True
+        key = id(value)
+
+        if key in self.predicate_cache:
+            return self.predicate_cache.setdefault(key, self.predicate_cache.pop(key))
+
         for predicate in self.predicates:
             if not predicate(value):
-                result = False
-                break
-        try:
-            return  self.predicate_cache.setdefault(key, result)  # NOQA
-        except NameError:
-            return result
+                return self.predicate_cache.setdefault(key, False)
+
+        self.predicate_cache.update({key: True})
+        return True
 
     def message(self, msg):
         self.msg = msg
@@ -81,4 +75,4 @@ class StrictPredicate(metaclass = _StrictlyMeta):
         raise TypeError(f"Cannot combine {self} with {other}")
 
 
-__all__ = ["StrictlyDescriptor", "StrictPredicate"]
+__all__ = ["Strictly", "StrictPredicate"]
