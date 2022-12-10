@@ -1,4 +1,4 @@
-from meta import _DescriptorPipelineMeta
+from assmblr.meta import _DescriptorPipelineMeta
 
 
 class Strictly(metaclass = _DescriptorPipelineMeta):
@@ -39,7 +39,6 @@ class Strictly(metaclass = _DescriptorPipelineMeta):
         for predicate in self.predicates:
             if not predicate(value):
                 return self.predicate_cache.setdefault(key, False)
-
         self.predicate_cache.update({key: True})
         return True
 
@@ -67,8 +66,7 @@ class StrictPredicate(metaclass = _DescriptorPipelineMeta):
         return func(value)
 
     def __or__(self, other):
-        is_callable = callable(other)
-        if is_callable:
+        if callable(other):
             return StrictPredicate(self.combine(self.func, other))
         raise TypeError(f"Cannot combine {self} with {other}")
 
@@ -77,5 +75,6 @@ class StrictPredicate(metaclass = _DescriptorPipelineMeta):
         def combined(x):
             return func1(x) and func2(x)
         return combined
+
 
 __all__ = ["Strictly", "StrictPredicate"]

@@ -1,2 +1,1 @@
-from strict import StrictPredicate, Strictly, predicates
-from mocking import DummyFunction, DummyValue
+import strict, mocking
